@@ -1,3 +1,4 @@
+
 package br.com.territory.dominio;
 
 import br.com.territory.exceptions.DadosInvalidosException;
@@ -21,12 +22,17 @@ public class SensorTemperatura implements Sensor {
     @Override
     public double realizarLeitura() throws FonteIndisponivelException {
 
-        if (!disponivel) {
+        if (!verificarFuncionamento()) {
             throw new FonteIndisponivelException(
                     "Sensor de temperatura indisponível.");
         }
 
         return temperatura;
+    }
+
+    @Override
+    public boolean verificarFuncionamento() {
+        return disponivel;
     }
 
     @Override
