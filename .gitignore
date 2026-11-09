@@ -34,3 +34,6 @@ target/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Banco de dados local H2
+data/
