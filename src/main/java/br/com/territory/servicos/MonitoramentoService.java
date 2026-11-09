@@ -54,13 +54,7 @@ public class MonitoramentoService {
         if (!status.equals("NORMAL")
                 && !status.equals("INATIVO")) {
 
-            String descricao = String.format(
-                    Locale.ROOT,
-                    "Temperatura: %.2f °C | Umidade: %.2f %% | "
-                            + "Consumo: %.2f kWh",
-                    regiao.getTemperatura(),
-                    regiao.getUmidade(),
-                    regiao.getConsumoEnergia());
+            String descricao = gerarDescricaoAlerta(regiao);
 
             alertaDAO.salvar(
                     regiao.getId(),
@@ -70,6 +64,87 @@ public class MonitoramentoService {
         }
 
         return status;
+    }
+
+    // Identifica os indicadores responsáveis pelo alerta.
+    private String gerarDescricaoAlerta(RegiaoMonitorada regiao) {
+
+        DadosTerritorio dados = regiao.getDadosTerritorio();
+
+        StringBuilder causas = new StringBuilder();
+
+        adicionarCausa(
+                causas,
+                "Temperatura",
+                regiao.getTemperatura(),
+                "°C",
+                dados.getLimiteAtencaoTemperatura(),
+                dados.getLimiteCriticoTemperatura());
+
+        adicionarCausa(
+                causas,
+                "Consumo de energia",
+                regiao.getConsumoEnergia(),
+                "kWh",
+                dados.getLimiteAtencaoConsumo(),
+                dados.getLimiteCriticoConsumo());
+
+        return String.format(
+                Locale.ROOT,
+                "Causas do alerta: %s | Umidade registrada: %.2f %%",
+                causas,
+                regiao.getUmidade());
+    }
+
+    // Acrescenta a descrição de cada indicador que atingiu um limite.
+    private void adicionarCausa(
+            StringBuilder causas,
+            String indicador,
+            double valor,
+            String unidade,
+            double limiteAtencao,
+            double limiteCritico) {
+
+        if (valor < limiteAtencao) {
+            return;
+        }
+
+        double limiteAlerta = (limiteAtencao + limiteCritico) / 2.0;
+
+        String nivel;
+        String descricaoLimite;
+        double limiteAtingido;
+
+        if (valor >= limiteCritico) {
+            nivel = "CRÍTICO";
+            descricaoLimite = "limite crítico";
+            limiteAtingido = limiteCritico;
+
+        } else if (valor >= limiteAlerta) {
+            nivel = "ALERTA";
+            descricaoLimite = "limite intermediário";
+            limiteAtingido = limiteAlerta;
+
+        } else {
+            nivel = "ATENÇÃO";
+            descricaoLimite = "limite de atenção";
+            limiteAtingido = limiteAtencao;
+        }
+
+        if (!causas.isEmpty()) {
+            causas.append("; ");
+        }
+
+        causas.append(String.format(
+                Locale.ROOT,
+                "%s: %.2f %s (%s; %s: %.2f %s)",
+                indicador,
+                valor,
+                unidade,
+                nivel,
+                descricaoLimite,
+                limiteAtingido,
+                unidade));
     }
 
     // Executa uma estratégia de previsão utilizando o histórico do banco.
@@ -137,16 +212,40 @@ public class MonitoramentoService {
                 limiteAtencao,
                 limiteCritico);
 
+        double limiteAlerta = (limiteAtencao + limiteCritico) / 2.0;
+
+        String descricaoLimite;
+
+        if (valorPrevisto >= limiteCritico) {
+            descricaoLimite = "limite crítico";
+
+        } else if (valorPrevisto >= limiteAlerta) {
+            descricaoLimite = "limite intermediário";
+
+        } else if (valorPrevisto >= limiteAtencao) {
+            descricaoLimite = "limite de atenção";
+
+        } else {
+            descricaoLimite = "nenhum limite de alerta atingido";
+        }
+
         String descricao = String.format(
                 Locale.ROOT,
                 "Previsão de %s pela estratégia %s: %.2f %s | "
+                        + "Classificação: %s | "
+                        + "Resultado: %s | "
                         + "Limite de atenção: %.2f %s | "
+                        + "Limite intermediário: %.2f %s | "
                         + "Limite crítico: %.2f %s",
                 tipoNormalizado,
                 nomeEstrategia,
                 valorPrevisto,
                 unidade,
+                nivel,
+                descricaoLimite,
                 limiteAtencao,
+                unidade,
+                limiteAlerta,
                 unidade,
                 limiteCritico,
                 unidade);

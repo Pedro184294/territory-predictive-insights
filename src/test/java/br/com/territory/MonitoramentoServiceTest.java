@@ -9,8 +9,10 @@ import br.com.territory.servicos.MonitoramentoService;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -119,6 +121,61 @@ class MonitoramentoServiceTest {
         // Assert
         assertEquals("INATIVO", status);
         verifyNoInteractions(alertaDAO);
+    }
+
+    @Test
+    void deveInformarLimiteIntermediarioNaDescricaoDoAlerta()
+            throws Exception {
+
+        // Arrange
+        RegiaoMonitorada regiao = criarRegiao(38.0, 500.0, 60.0);
+
+        // Act
+        service.registrarMonitoramento(regiao);
+
+        // Assert
+        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+
+        verify(alertaDAO).salvar(
+                eq(regiao.getId()),
+                eq("ALERTA"),
+                captor.capture(),
+                any());
+
+        String descricao = captor.getValue();
+
+        assertTrue(descricao.contains("Temperatura: 38.00 °C"));
+        assertTrue(descricao.contains("ALERTA"));
+        assertTrue(descricao.contains("limite intermediário"));
+        assertTrue(descricao.contains("37.50 °C"));
+    }
+
+    @Test
+    void deveIdentificarTemperaturaEConsumoNaDescricaoDoAlerta()
+            throws Exception {
+
+        // Arrange
+        RegiaoMonitorada regiao = criarRegiao(41.0, 950.0, 60.0);
+
+        // Act
+        service.registrarMonitoramento(regiao);
+
+        // Assert
+        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+
+        verify(alertaDAO).salvar(
+                eq(regiao.getId()),
+                eq("CRÍTICO"),
+                captor.capture(),
+                any());
+
+        String descricao = captor.getValue();
+
+        assertTrue(descricao.contains("Temperatura: 41.00 °C"));
+        assertTrue(descricao.contains("Consumo de energia: 950.00 kWh"));
+        assertTrue(descricao.contains("limite crítico"));
+        assertTrue(descricao.contains("40.00 °C"));
+        assertTrue(descricao.contains("900.00 kWh"));
     }
 
     private RegiaoMonitorada criarRegiao(
