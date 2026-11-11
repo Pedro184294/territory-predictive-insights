@@ -12,9 +12,9 @@ O **Territory Predictive Insights** é uma aplicação Java desenvolvida para mo
 
 O sistema permite registrar medições, classificar as condições monitoradas, gerar alertas e executar previsões utilizando diferentes estratégias de análise de dados históricos.
 
-A proposta é transformar dados coletados em informações que auxiliem no acompanhamento de regiões e na identificação antecipada de possíveis situações de atenção ou risco.
+A proposta é transformar dados coletados em informações que auxiliem no acompanhamento de regiões, na identificação antecipada de possíveis situações de atenção ou risco e no apoio à tomada de decisões preventivas.
 
-## 2. Público-alvo
+## 2. Público-alvo e decisões apoiadas
 
 A solução é direcionada a:
 
@@ -22,7 +22,18 @@ A solução é direcionada a:
 - Equipes responsáveis pelo monitoramento ambiental;
 - Profissionais de planejamento e infraestrutura;
 - Organizações que precisam acompanhar indicadores ambientais e energéticos;
-- Gestores que necessitam de informações para apoiar decisões preventivas.
+- Gestores responsáveis pela análise de condições territoriais.
+
+O sistema busca apoiar decisões como:
+
+- Identificar regiões que necessitam de maior acompanhamento;
+- Priorizar inspeções em locais classificados como ALERTA ou CRÍTICO;
+- Identificar aumentos relevantes de temperatura e consumo de energia;
+- Direcionar equipes técnicas para regiões que exigem avaliação;
+- Acompanhar tendências por meio do histórico de medições e das previsões;
+- Avaliar a necessidade de revisão dos limites de monitoramento.
+
+As informações geradas servem como apoio à análise dos responsáveis, não substituindo avaliações técnicas ou decisões humanas.
 
 ## 3. Funcionalidades
 
@@ -102,15 +113,19 @@ src/
 
 ## 6. Estratégias de previsão
 
-O sistema implementa duas estratégias:
+O sistema implementa duas estratégias de previsão:
 
 ### Média móvel — `PrevisaoMediaMovel`
 
 Calcula a média das últimas medições disponíveis, considerando até cinco registros. O objetivo é identificar uma tendência com base nos valores mais recentes.
 
+A estratégia utiliza os registros existentes no histórico. Quando há menos de cinco medições, calcula a média utilizando os valores disponíveis. Sem medições, não é possível gerar uma previsão.
+
 ### Comparação de períodos — `PrevisaoComparacao`
 
 Compara dois períodos do histórico de medições e utiliza a variação observada para estimar um próximo valor.
+
+Essa estratégia exige pelo menos quatro medições para realizar a comparação. Quando a quantidade de registros é insuficiente, o sistema informa que não é possível executar a previsão.
 
 As duas estratégias herdam de `EstrategiaPrevisao` e implementam seu próprio comportamento por meio do método `prever()`.
 
@@ -120,7 +135,7 @@ Foi utilizado o padrão **Factory**, implementado pela classe `FabricaPrevisao`.
 
 A fábrica centraliza a criação das estratégias de previsão, permitindo selecionar entre média móvel e comparação de períodos sem concentrar a lógica de instanciação no menu ou nos serviços.
 
-Essa abordagem reduz o acoplamento e facilita a inclusão de novas estratégias no futuro.
+Essa abordagem reduz o acoplamento, organiza a criação dos objetos e facilita a inclusão de novas estratégias no futuro.
 
 ## 8. Banco de dados e persistência
 
@@ -152,6 +167,8 @@ As validações verificam, entre outros pontos:
 - Umidade entre 0% e 100%;
 - Limites de monitoramento válidos;
 - Disponibilidade dos sensores.
+
+Essas validações ajudam a impedir que dados inválidos sejam utilizados nos cálculos, nas classificações e nas previsões.
 
 ## 10. Como executar o projeto
 
@@ -205,7 +222,7 @@ A aplicação disponibiliza as seguintes opções:
 
 ## 12. Testes automatizados
 
-Foram desenvolvidos testes utilizando JUnit 5 e Mockito para verificar o comportamento das classes e funcionalidades.
+Foram desenvolvidos testes automatizados utilizando JUnit 5 e Mockito para verificar o comportamento das classes e funcionalidades da aplicação.
 
 Os testes contemplam:
 
@@ -215,9 +232,34 @@ Os testes contemplam:
 - Validação de limites;
 - Tratamento de exceções personalizadas;
 - Funcionamento dos serviços de monitoramento;
-- Operações de persistência.
+- Operações de persistência;
+- Registro de medições e alertas;
+- Verificação das descrições e dos limites associados aos alertas.
 
-A execução dos testes é realizada pelo comando:
+### Técnicas utilizadas
+
+- **Padrão AAA (Arrange, Act, Assert):** organização dos testes em preparação, execução e verificação dos resultados.
+- **assertThrows:** verificação do lançamento de exceções personalizadas, como `DadosInvalidosException` e `FonteIndisponivelException`.
+- **Mockito:** simulação de objetos DAO para testar os serviços sem depender diretamente do banco de dados.
+- **ArgumentCaptor:** captura de argumentos utilizados nas chamadas dos DAOs para verificar as informações enviadas.
+
+### Resultado dos testes
+
+Na última execução de `mvn clean test`, foram obtidos os seguintes resultados:
+
+| Classe de teste | Testes executados |
+|---|---:|
+| DadosTerritorioTest | 8 |
+| MonitoramentoServiceTest | 7 |
+| PersistenciaTest | 3 |
+| RegiaoMonitoradaTest | 11 |
+| SensoresTest | 6 |
+| ValidadorDadosTest | 7 |
+| **Total** | **42** |
+
+**Resultado:** 42 testes executados, 0 falhas, 0 erros e 0 testes ignorados.
+
+Para executar novamente todos os testes:
 
 ```bash
 mvn clean test
@@ -225,13 +267,17 @@ mvn clean test
 
 ## 13. Equipe
 
+**Integrantes do grupo:**
+
 - Pedro Luis Tofoli
 - Raphael Talarico Nascimento Silva
 - Nelson Troccoli Santos Neto
 
 ### Responsabilidade pelo desenvolvimento
 
-Pedro Luis Tofoli foi responsável pelo desenvolvimento técnico integral da solução, incluindo a estruturação do projeto, implementação das classes e funcionalidades, integração com o banco de dados, estratégias de previsão, tratamento de exceções, testes automatizados e documentação.
+O desenvolvimento técnico integral do projeto foi realizado individualmente por Pedro Luis Tofoli, responsável pela estruturação da aplicação, implementação das classes e funcionalidades, integração com o banco de dados, desenvolvimento das estratégias de previsão, tratamento de exceções, testes automatizados e documentação.
+
+Raphael Talarico Nascimento Silva e Nelson Troccoli Santos Neto permanecem como integrantes do grupo, conforme a composição definida para o trabalho.
 
 ## 14. Reflexão crítica
 
@@ -239,20 +285,39 @@ O Territory Predictive Insights foi desenvolvido com o objetivo de demonstrar co
 
 Entretanto, é importante reconhecer que previsões e alertas não devem ser tratados como verdades absolutas. O sistema utiliza leituras simuladas, e seus resultados dependem diretamente da qualidade, quantidade e representatividade dos dados disponíveis. Em uma aplicação real, seria necessário integrar sensores físicos confiáveis, realizar calibrações periódicas e considerar fatores externos que podem influenciar as condições de uma região.
 
-O sistema também deve permanecer silencioso quando não houver dados suficientes, quando as fontes estiverem indisponíveis ou quando as medições não apresentarem confiabilidade. Gerar alertas sem evidências adequadas poderia provocar alarmes desnecessários e comprometer a credibilidade da solução.
+A quantidade de dados também influencia a confiabilidade das previsões. A média móvel consegue trabalhar com os registros disponíveis, mesmo quando existem menos de cinco medições, enquanto a comparação de períodos exige pelo menos quatro registros. Por isso, previsões realizadas com históricos pequenos devem ser interpretadas com cautela.
+
+Quando não existem medições disponíveis ou quando uma fonte de dados está indisponível, o sistema não deve apresentar resultados como se fossem confiáveis. Da mesma forma, dados inválidos precisam ser tratados antes de serem utilizados nos cálculos. Gerar alertas ou previsões sem evidências adequadas poderia provocar interpretações equivocadas e comprometer a credibilidade da solução.
 
 Outro ponto importante é que os níveis NORMAL, ATENÇÃO, ALERTA e CRÍTICO representam classificações baseadas em limites configurados. Eles servem como instrumentos de apoio ao acompanhamento e à tomada de decisão, mas não substituem a análise de profissionais responsáveis. Uma situação crítica deve ser investigada por pessoas capacitadas antes da definição de qualquer intervenção.
 
-As previsões implementadas também possuem limitações: a média móvel considera os valores recentes, enquanto a comparação de períodos utiliza a variação observada no histórico. Nenhuma das estratégias considera, nesta versão, sazonalidade, condições climáticas externas ou outros fatores complexos. Portanto, seus resultados devem ser interpretados como estimativas.
+As previsões implementadas também possuem limitações: a média móvel considera os valores recentes, enquanto a comparação de períodos utiliza a variação observada no histórico. Nenhuma das estratégias considera, nesta versão, sazonalidade, condições climáticas externas ou outros fatores complexos. Portanto, seus resultados devem ser interpretados como estimativas, e não como garantias de acontecimentos futuros.
 
 Por fim, ferramentas de inteligência artificial podem auxiliar na organização de ideias, revisão de código e compreensão de conceitos, mas a validação das funcionalidades, a análise dos resultados e a responsabilidade pelo funcionamento da aplicação devem permanecer com os desenvolvedores. A evolução do projeto deve priorizar a confiabilidade dos dados, a transparência dos alertas e a utilização responsável das previsões.
 
-## 15. Considerações finais
+## 15. Uso de Inteligência Artificial
+
+Ferramentas de inteligência artificial foram utilizadas como apoio durante o desenvolvimento do projeto, principalmente para:
+
+- Auxiliar na compreensão de conceitos de programação orientada a objetos;
+- Apoiar a análise e a revisão de trechos de código;
+- Identificar possíveis problemas de implementação;
+- Auxiliar na elaboração e revisão de testes automatizados;
+- Apoiar a organização e a documentação do projeto;
+- Esclarecer dúvidas sobre Maven, JDBC, persistência e tratamento de exceções.
+
+As sugestões geradas por essas ferramentas foram analisadas e verificadas durante o desenvolvimento. As funcionalidades foram executadas e os testes automatizados foram utilizados para validar o comportamento da aplicação.
+
+A inteligência artificial foi utilizada como ferramenta de apoio, não substituindo a responsabilidade pelo desenvolvimento, pela compreensão do código e pela validação dos resultados.
+
+## 16. Considerações finais
 
 O projeto demonstra a aplicação prática dos principais conceitos de Programação Orientada a Objetos, incluindo abstração, encapsulamento, herança, polimorfismo, interfaces, tratamento de exceções, padrões de projeto, testes automatizados e persistência de dados.
 
-A solução pode ser expandida futuramente com integração a sensores reais, fontes públicas de dados ambientais, exportação de relatórios e estratégias de previsão mais avançadas.
+A solução permite acompanhar condições territoriais, armazenar medições, identificar situações que exigem atenção e estimar tendências a partir de dados históricos.
+
+O sistema também pode ser expandido futuramente com integração a sensores reais, fontes públicas de dados ambientais, exportação de relatórios e estratégias de previsão mais avançadas.
 
 ---
 
-**Repositório:** https://github.com/Pedro184294/territory-predictive-insights
+**Repositório GitHub:** https://github.com/Pedro184294/territory-predictive-insights
